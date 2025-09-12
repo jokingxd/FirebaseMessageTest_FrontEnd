@@ -1,103 +1,177 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { requestFirebaseToken, onMessageListener } from "../firebase";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+export default function Page() {
+  const [lastToken, setLastToken] = useState(typeof window !== "undefined" ? localStorage.getItem("fcm_token") : null);
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    let intervalId;
+
+    const registerToken = async (_registration) => {
+      console.log("ATTEMPT TO REQUEST TOKEN");
+      const token = await requestFirebaseToken(_registration);
+      console.log("TOKEN IS:", token);
+      const storedToken = localStorage.getItem("fcm_token");
+      // if (token && token !== storedToken) 
+      // {
+        try 
+        {
+          console.log("attempting to send to backend");
+          fetch('/api/registerToken', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ m_ID: 1, m_Token: token }) 
+          })
+          .then((res) => res.json())
+          .then((data) => console.log("Token registered:", data))
+          .catch(console.error);
+
+          console.log("Token sent to backend:", token);
+
+          setLastToken(token);
+          localStorage.setItem("fcm_token", token);
+        } 
+        catch (err) 
+        {
+          console.error("Failed to send token to backend:", err);
+        }
+      // }
+    };
+
+    const onListener = async () => {
+      await onMessageListener((payload) => {
+        console.log("Foreground message:", payload);
+        setMessages((prev) => [...prev, payload.data]);
+
+        toast(
+          // <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-start", 
+              maxWidth: "300px" // optional
+            }}>
+            {payload.data?.image && (
+              <img
+                src={payload.data?.image}
+                alt="notification"
+                style={{ width: "100%", height: "auto", maxHeight: "200px", objectFit: "contain", marginBottom: 8 }}
+              />
+            )}
+            <div>
+              <strong style={{ marginBottom: "4px" }}>{payload.data?.title}</strong>
+              <div>{payload.data?.body}</div>
+            </div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+
+      }); 
+    };
+
+    const registerServiceWorker = async () => {
+      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      // if (!registration.active && registration.installing) {
+      //   await new Promise(resolve => {
+      //     registration.installing.addEventListener("statechange", () => {
+      //       if (registration.installing.state === "activated") resolve();
+      //     });
+      //   });
+      // }
+
+      await new Promise((resolve) => {
+        let worker = registration.installing || registration.waiting;
+        if (!worker) 
+          {
+          // SW already active, resolve immediately
+          resolve();
+          return;
+        }
+
+        worker.addEventListener("statechange", () => {
+            if (worker.state === "activated") resolve();
+        });
+      });
+
+      return registration;
+    };
+
+    const init = async () => {
+      if ("serviceWorker" in navigator) {
+        const registration = await registerServiceWorker();
+        await registerToken(registration);
+        intervalId = setInterval(() => registerToken(registration), 1000 * 60 * 60);
+        onListener();
+      }
+    }
+
+    init();
+
+
+    // if ("serviceWorker" in navigator) 
+    // {
+    //     navigator.serviceWorker
+    //           .register("/firebase-messaging-sw.js")
+    //           .then((registration) => 
+    //           {
+    //             console.log("Service Worker registered,", registration);
+
+    //             if (registration.active) {
+    //               console.log("SW is active, safe to call getToken");
+    //               registerToken(registration);
+    //               intervalId = setInterval(registerToken, 1000 * 60 * 60);
+    //               onListener();
+    //             } else {
+    //               // Listen for activation
+    //               registration.addEventListener("updatefound", () => {
+    //                 const newWorker = registration.installing;
+    //                 newWorker.addEventListener("statechange", () => {
+    //                   if (newWorker.state === "activated") {
+    //                     console.log("SW activated, safe to call getToken");
+    //                     registerToken(registration);
+    //                     intervalId = setInterval(registerToken, 1000 * 60 * 60);
+    //                     onListener();
+    //                   }
+    //                 });
+    //               });
+    //             }
+    //           })
+    //           .catch(console.error);
+    // }
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div style={{ padding: 20 }}>
+      <h1>Push Notification Demo</h1>
+      <h2>Received Messages:</h2>
+      <ul>
+        {messages.map((msg, i) => (
+          // <li key={i}>
+          //   {msg?.title}: {msg?.body}
+          // </li>
+            <div key ={i}>
+              <img src={msg?.image} alt="queue" style={{ width: 80 }} />
+              <p>{msg?.title}</p>
+              <p>{msg?.body}</p>
+            </div>
+        ))}
+      </ul>
+      <ToastContainer />
     </div>
   );
 }

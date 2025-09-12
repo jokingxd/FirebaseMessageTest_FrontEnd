@@ -1,0 +1,41 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getMessaging, onBackgroundMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-sw.js";
+
+console.log("SW: scripts imported");
+console.log("Service Worker: starting up");
+
+let messaging;
+
+// Receive config from client
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "INIT_FIREBASE") {
+    const app = initializeApp(event.data.config);
+    console.log("SW: firebase initialized");
+
+    messaging = getMessaging(app);
+
+    // Handle background messages
+    onBackgroundMessage(messaging, (payload) => {
+      console.log("Background message received:", payload);
+
+      self.registration.showNotification(payload.notification.title, {
+        body: payload.notification.body,
+        icon: '/icon.png',
+        image: payload.notification.image
+      });
+    });
+  }
+});
+
+// Handle notification clicks
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === "/" && "focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow("/queue");
+    })
+  );
+});
