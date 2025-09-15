@@ -22,7 +22,8 @@ export default function Page() {
         try 
         {
           console.log("attempting to send to backend");
-          fetch('/api/registerToken', {
+          const API_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+          fetch(`${API_URL}/api/registerToken`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
