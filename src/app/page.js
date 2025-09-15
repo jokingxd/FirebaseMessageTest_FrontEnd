@@ -50,6 +50,68 @@ export default function Page() {
         console.log("Foreground message:", payload);
         setMessages((prev) => [...prev, payload.data]);
 
+        // const img = new Image();
+        // img.crossOrigin = "anonymous";
+        // console.warn(payload.data?.image);
+        // img.src = payload.data?.image;
+
+        // img.onload = () =>
+        // {
+        //   const queue = "1000";
+        //   const time = "1900H";
+        //   const date = "11/11/11";
+        //   const canvas = document.createElement("canvas");
+        //   const ctx = canvas.getContext("2d");
+        //   canvas.width = img.width;
+        //   canvas.height = img.height;
+
+        //   ctx.drawImage(img, 0, 0);
+
+        //   ctx.font = "bold 32px Arial";
+        //   ctx.fillStyle = "white";
+        //   ctx.fillText(`Queue: ${queue}`, 50, 100);
+        //   ctx.fillText(`Time: ${time}`, 50, 150);
+        //   ctx.fillText(`Date: ${date}`, 50, 200);
+
+        //   const finalImage = canvas.toDataURL("image/png");
+
+        //   // new Notification("Queue Update", {
+        //   //   body: `Queue ${queue} at ${time} ${date}`,
+        //   //   icon: finalImage,
+        //   // });
+
+        //   toast(
+        //   // <div style={{ display: "flex", alignItems: "center" }}>
+        //     <div style={{ 
+        //         display: "flex", 
+        //         flexDirection: "column", 
+        //         alignItems: "flex-start", 
+        //         maxWidth: "300px" // optional
+        //       }}>
+        //       {finalImage && (
+        //         <img
+        //           src={finalImage}
+        //           alt="notification"
+        //           style={{ width: "100%", height: "auto", maxHeight: "200px", objectFit: "contain", marginBottom: 8 }}
+        //         />
+        //       )}
+        //       <div>
+        //         <strong style={{ marginBottom: "4px" }}>{payload.data?.title}</strong>
+        //         <div>{payload.data?.body}</div>
+        //       </div>
+        //     </div>,
+        //     {
+        //       position: "top-right",
+        //       autoClose: 5000,
+        //       hideProgressBar: false,
+        //       closeOnClick: true,
+        //       pauseOnHover: true,
+        //       draggable: true,
+        //     }
+        //   );
+
+        // };
+
         toast(
           // <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ 
@@ -113,6 +175,13 @@ export default function Page() {
     const init = async () => {
       if ("serviceWorker" in navigator) {
         const registration = await registerServiceWorker();
+
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          if (event.data?.type === "NEW_PUSH") {
+            setMessages((prev) => [...prev, event.data.payload]);
+          }
+        });
+
         await registerToken(registration);
         intervalId = setInterval(() => registerToken(registration), 1000 * 60 * 60);
         onListener();
@@ -165,7 +234,7 @@ export default function Page() {
           //   {msg?.title}: {msg?.body}
           // </li>
             <div key ={i}>
-              <img src={msg?.image} alt="queue" style={{ width: 80 }} />
+              <img src={msg?.image} alt="queue" style={{ width: "50%" }} />
               <p>{msg?.title}</p>
               <p>{msg?.body}</p>
             </div>

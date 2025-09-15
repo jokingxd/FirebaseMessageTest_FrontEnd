@@ -42,6 +42,13 @@ export const GET = async (req, res) => {
               icon: '/icon.png',
               image: payload.data.image
           });
+
+          self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({ type: "NEW_PUSH", payload: payload.data });
+            });
+          });
+
         });
 
 

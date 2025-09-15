@@ -3,7 +3,7 @@ export async function POST(req) {
     try {
         const body = await req.json();
 
-        const res = await fetch('http://192.168.171.71:5259/api/PushNotification/register-token', {
+        const res = await fetch('https://pushnotificationbackend-2cjz.onrender.com/api/PushNotification/register-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

@@ -10,20 +10,20 @@ const handle = app.getRequestHandler();
 
 // Point to your cert files
 const httpsOptions = {
-  key: fs.readFileSync(path.join(__dirname, 'cert', 'localhost-key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'localhost.pem')),
+  key: fs.readFileSync(path.join(__dirname, 'cert', '192.168.171.53-key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', '192.168.171.53.pem')),
 };
 
 app.prepare().then(() => {
   createServer(httpsOptions, (req, res) => {
     const parsedUrl = parse(req.url, true);
-    if (parsedUrl.pathname === '/firebase-messaging-sw.js') {
-        res.writeHead(200, { 'Content-Type': 'application/javascript' });
-        fs.createReadStream(path.join(__dirname, 'public', 'firebase-messaging-sw.js')).pipe(res);
-        return;
-    }
+    // if (parsedUrl.pathname === '/firebase-messaging-sw.js') {
+    //     res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    //     fs.createReadStream(path.join(__dirname, 'public', 'firebase-messaging-sw.js')).pipe(res);
+    //     return;
+    // }
     handle(req, res, parsedUrl);
-  }).listen(3000, (err) => {
+  }).listen(3000, '0.0.0.0', (err) => {
     if (err) throw err;
     console.log('> HTTPS server ready on https://localhost:3000');
   });
