@@ -21,8 +21,8 @@ export default function Page() {
       // {
         try 
         {
-          if(!token)
-            throw new Error("FCM Token is missing.");
+          // if(!token)
+          //   throw new Error("FCM Token is missing.");
           console.log("attempting to send to backend");
           const API_URL = process.env.NEXT_PUBLIC_APP_URL || "";
           fetch(`${API_URL}/api/registerToken`, {

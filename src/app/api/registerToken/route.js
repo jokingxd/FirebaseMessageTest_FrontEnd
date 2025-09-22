@@ -1,7 +1,14 @@
 // /app/api/registerToken/route.js
 export async function POST(req) {
     try {
+
         const body = await req.json();
+
+        console.log("Received body:", body); // server-side log
+        console.log("m_Token:", body.m_Token);
+        
+        if(!body.m_Token)
+            throw new Error("FCM Token is missing.");
 
         const res = await fetch('https://pushnotificationbackend-kvi4.onrender.com/api/PushNotification/register-token', {
         method: 'POST',
