@@ -227,10 +227,46 @@ export default function Page() {
     return () => clearInterval(intervalId);
   }, []);
 
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      console.log("This browser does not support notifications.");
+      return;
+    }
+
+    const currentPermission = Notification.permission;
+
+    if (currentPermission === 'granted') {
+      console.log('Permission already granted.');
+    } else if (currentPermission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+        } else {
+          console.log('Notification permission denied.');
+        }
+      });
+    } else {
+      console.log('Permission permanently denied.');
+    }
+  }
+
   return (
     <div style={{ padding: 20 }}>
       <h1>Push Notification Demo</h1>
       <h2>Received Messages:</h2>
+      <button onClick={requestNotificationPermission}
+      style={{
+        backgroundColor: '#007bff',
+        color: 'white',
+        padding: '10px 20px',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '16px'
+      }}
+      >
+        Enable Notification
+      </button>
       <ul>
         {messages.map((msg, i) => (
           // <li key={i}>
